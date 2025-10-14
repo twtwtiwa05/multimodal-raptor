@@ -22,14 +22,14 @@
 ** 원클릭 실행:**
 1. 위 "Open in GitHub Codespaces" 버튼 클릭
 2. 자동으로 환경 설정됨
-3. 터미널에서: `streamlit run app.py`
+3. 터미널에서: `streamlit run streamlit_app.py`
 4. 브라우저에서 강남구 지도 클릭하여 테스트!
 
 ###  로컬 실행
 ```bash
 # 웹 데모 실행
 pip install -r requirements_web.txt
-streamlit run app.py
+streamlit run streamlit_app.py
 ```
 
 ###  로컬 설치

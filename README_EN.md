@@ -22,14 +22,14 @@ A high-performance multimodal transportation routing system implementing Wave-Ex
 ** One-Click Demo:**
 1. Click "Open in GitHub Codespaces" button above
 2. Environment automatically set up
-3. Run in terminal: `streamlit run app.py`
+3. Run in terminal: `streamlit run streamlit_app.py`
 4. Click on Gangnam district map in browser to test!
 
 ###  Local Installation
 ```bash
 # Web demo
 pip install -r requirements_web.txt
-streamlit run app.py
+streamlit run streamlit_app.py
 
 # CLI package
 pip install -r requirements.txt
