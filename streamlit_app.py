@@ -181,7 +181,7 @@ if st.session_state.origin and st.session_state.destination:
             try:
                 # Import PART1_2 classes to register for pickle loading
                 sys.path.append(os.path.join(os.path.dirname(__file__), 'scripts'))
-                from PART1_2 import Stop, Route, Trip, Transfer
+                from PART1_2 import Stop, Route, Trip
                 # Import and run PART3_OSM_DIJKSTRA
                 from PART3_OSM_DIJKSTRA import OSMDijkstraRAPTOR
                 
