@@ -1405,7 +1405,43 @@ class OSMDijkstraRAPTOR:
                 'cost_won': 0
             })
         
+        # 연속된 같은 노선 구간 합치기
+        segments = self._merge_consecutive_routes(segments)
+        
         return segments
+    
+    def _merge_consecutive_routes(self, segments):
+        """연속된 같은 노선의 구간들을 합치기"""
+        if not segments:
+            return segments
+        
+        merged_segments = []
+        current_segment = None
+        
+        for segment in segments:
+            if segment['type'] == 'transit' and current_segment and current_segment['type'] == 'transit':
+                # 같은 노선인지 확인
+                if (current_segment.get('route_name') == segment.get('route_name') and
+                    current_segment.get('mode') == segment.get('mode')):
+                    
+                    # 같은 노선이면 합치기
+                    current_segment['duration_min'] += segment['duration_min']
+                    current_segment['cost_won'] = max(current_segment['cost_won'], segment['cost_won'])  # 요금은 한 번만
+                    current_segment['to_stop'] = segment['to_stop']
+                    current_segment['arrival_time'] = segment['arrival_time']
+                    current_segment['description'] = f"{current_segment['route_name']}: {current_segment['from_stop']} → {current_segment['to_stop']}"
+                    continue
+            
+            # 이전 세그먼트를 저장하고 새 세그먼트 시작
+            if current_segment:
+                merged_segments.append(current_segment)
+            current_segment = segment.copy()
+        
+        # 마지막 세그먼트 추가
+        if current_segment:
+            merged_segments.append(current_segment)
+        
+        return merged_segments
     
     def _calculate_total_cost(self, segments):
         """세그먼트들의 총 비용 계산"""
