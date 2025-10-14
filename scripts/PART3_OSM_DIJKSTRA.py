@@ -389,6 +389,11 @@ class OSMDijkstraRAPTOR:
                     mode_details=mode_details
                 )
                 
+                # PM mode일 경우 격자 정보 추가
+                if mode == 'pm' and origin_coords:
+                    density = self._get_pm_density(origin_coords[0], origin_coords[1])
+                    result.grid_info = {'density': density, 'wait_time_sec': mode_details.get('wait_time_sec', 0)}
+                
                 results.append(result)
         
         return results
@@ -478,6 +483,11 @@ class OSMDijkstraRAPTOR:
                     mode_details=mode_details
                 )
                 
+                # PM mode일 경우 격자 정보 추가
+                if mode == 'pm' and origin_coords:
+                    density = self._get_pm_density(origin_coords[0], origin_coords[1])
+                    result.grid_info = {'density': density, 'wait_time_sec': mode_details.get('wait_time_sec', 0)}
+                
                 results.append(result)
         
         # logger.debug(f"이그레스 {mode} 모드: {valid_stops}개 정류장에서 목적지 도달 가능, {len(results)}개 결과")
@@ -540,7 +550,12 @@ class OSMDijkstraRAPTOR:
                                 'walk_to_dock_sec': walk_to_dock_time,
                                 'pickup_time_sec': BIKE_PICKUP_TIME_SEC,
                                 'bike_ride_sec': bike_time
-                            }
+                            },
+                            # 상세 정보 추가
+                            station_name=station.station_name,
+                            station_id=station_id,
+                            station_lat=station.lat,
+                            station_lon=station.lon
                         )
                         results.append(result)
         
@@ -600,7 +615,12 @@ class OSMDijkstraRAPTOR:
                                 'bike_ride_sec': bike_time,
                                 'pickup_time_sec': BIKE_PICKUP_TIME_SEC,
                                 'walk_from_dock_sec': walk_from_dock_time
-                            }
+                            },
+                            # 상세 정보 추가  
+                            station_name=station.station_name,
+                            station_id=station_id,
+                            station_lat=station.lat,
+                            station_lon=station.lon
                         )
                         results.append(result)
         
@@ -655,6 +675,20 @@ class OSMDijkstraRAPTOR:
                     heapq.heappush(heap, (new_dist, neighbor))
         
         return distances
+    
+    def _get_pm_density(self, lat: float, lon: float) -> float:
+        """해당 위치의 PM 밀도 반환 (대/km²)"""
+        try:
+            # 격자 좌표 계산
+            grid_x = int((lon - 127.0) * 1000 / 50)  # 50m 격자
+            grid_y = int((lat - 37.46) * 1000 / 50) 
+            grid_key = f"{grid_x}_{grid_y}"
+            
+            if grid_key in self.pm_density_map:
+                return self.pm_density_map[grid_key].get('density', 0)
+            return 5.0  # 기본 밀도
+        except:
+            return 5.0
     
     def _get_pm_wait_time(self, lat: float, lon: float) -> float:
         """PM 대기시간 계산 (밀도 기반)"""
