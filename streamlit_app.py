@@ -172,6 +172,26 @@ elif map_data['last_clicked']:
     else:
         st.error("강남구 영역 내에서만 선택할 수 있습니다!")
 
+# Cached router initialization
+@st.cache_resource
+def initialize_router():
+    """캐시된 라우터 초기화 - 한 번만 로드됨"""
+    # Import PART1_2 classes to register for pickle loading
+    sys.path.append(os.path.join(os.path.dirname(__file__), 'scripts'))
+    from PART1_2 import Stop, Route, Trip
+    # Import and run PART3_OSM_DIJKSTRA
+    from PART3_OSM_DIJKSTRA import OSMDijkstraRAPTOR
+    
+    # Initialize router with explicit data paths
+    base_dir = os.path.dirname(__file__)
+    router = OSMDijkstraRAPTOR(
+        raptor_data_path=os.path.join(base_dir, "data/processed/gangnam_raptor_data/raptor_data.pkl"),
+        osm_graph_path=os.path.join(base_dir, "data/processed/gangnam_road_network.pkl"),
+        bike_stations_path=os.path.join(base_dir, "data/processed/bike_stations_simple/ttareungee_stations.csv"),
+        pm_density_path=os.path.join(base_dir, "data/processed/grid_pm_data/pm_density_map.json")
+    )
+    return router
+
 # Route search
 if st.session_state.origin and st.session_state.destination:
     st.subheader("🚀 경로 탐색")
@@ -179,20 +199,11 @@ if st.session_state.origin and st.session_state.destination:
     if st.button("🔍 최적 경로 찾기", type="primary"):
         with st.spinner("PART3 OSM 다익스트라 RAPTOR 알고리즘 실행 중..."):
             try:
-                # Import PART1_2 classes to register for pickle loading
-                sys.path.append(os.path.join(os.path.dirname(__file__), 'scripts'))
-                from PART1_2 import Stop, Route, Trip
-                # Import and run PART3_OSM_DIJKSTRA
-                from PART3_OSM_DIJKSTRA import OSMDijkstraRAPTOR
-                
-                # Initialize router with explicit data paths
-                base_dir = os.path.dirname(__file__)
-                router = OSMDijkstraRAPTOR(
-                    raptor_data_path=os.path.join(base_dir, "data/processed/gangnam_raptor_data/raptor_data.pkl"),
-                    osm_graph_path=os.path.join(base_dir, "data/processed/gangnam_road_network.pkl"),
-                    bike_stations_path=os.path.join(base_dir, "data/processed/bike_stations_simple/ttareungee_stations.csv"),
-                    pm_density_path=os.path.join(base_dir, "data/processed/grid_pm_data/pm_density_map.json")
-                )
+                # Use cached router initialization
+                if 'router_loaded' not in st.session_state:
+                    st.info("🔄 첫 실행: 데이터 로딩 중... (이후 실행은 빨라집니다)")
+                    st.session_state.router_loaded = True
+                router = initialize_router()
                 
                 # Run routing
                 start_time = time.time()
