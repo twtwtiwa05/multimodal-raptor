@@ -66,6 +66,12 @@ class AccessResult:
     mode: str  # 'walk', 'pm', 'bike'
     access_path: List[int]  # OSM 노드 경로
     mode_details: Dict[str, Any] = field(default_factory=dict)  # 모드별 세부정보
+    # 추가 상세 정보
+    station_name: str = None  # 따릉이 대여소 이름
+    station_id: str = None    # 따릉이 대여소 ID
+    station_lat: float = None # 따릉이 대여소 위도
+    station_lon: float = None # 따릉이 대여소 경도
+    grid_info: dict = field(default_factory=dict)  # PM 격자 정보
 
 @dataclass
 class BikeStation:
@@ -1023,12 +1029,30 @@ class OSMDijkstraRAPTOR:
                 
                 if arrival_time < tau[1][stop_idx]:
                     tau[1][stop_idx] = arrival_time
-                    parent[1][stop_idx] = {
+                    # 액세스 상세 정보 생성
+                    access_info = {
                         'type': 'access',
                         'mode': access.mode,
                         'access_time': access.access_time_sec / 60,
                         'details': access.mode_details
                     }
+                    
+                    # 모드별 상세 정보 추가
+                    if access.mode == 'bike' and hasattr(access, 'station_name'):
+                        access_info['station_info'] = {
+                            'stationName': getattr(access, 'station_name', '정보없음'),
+                            'stationId': getattr(access, 'station_id', ''),
+                            'lat': getattr(access, 'station_lat', 0),
+                            'lon': getattr(access, 'station_lon', 0)
+                        }
+                    elif access.mode == 'pm':
+                        # PM 격자 정보 (mode_details에서 추출)
+                        if access.mode_details and 'density' in str(access.mode_details):
+                            access_info['grid_info'] = access.mode_details
+                        else:
+                            access_info['grid_info'] = {'density': 10.0}  # 기본값
+                    
+                    parent[1][stop_idx] = access_info
                     marked_stops.add(stop_idx)
         
         logger.info(f"1라운드 초기화: {len(marked_stops)}개 정류장 마킹")
@@ -1311,16 +1335,36 @@ class OSMDijkstraRAPTOR:
         
         for i, (round_num, stop_idx, parent_info) in enumerate(path):
             if parent_info['type'] == 'access':
-                # 액세스 구간
+                # 액세스 구간 - 상세 정보 포함
                 access_time = self._clean_segment_time(parent_info['access_time'])
+                mode = parent_info['mode']
+                
+                # 모드별 상세 정보 생성
+                if mode == 'bike':
+                    # 따릉이 정보
+                    bike_station_info = parent_info.get('station_info', {})
+                    station_name = bike_station_info.get('stationName', '정보없음')
+                    description = f"🚲 따릉이: 출발지 → {station_name} 대여소 ({access_time:.1f}분)"
+                    cost = 1000  # 따릉이 기본 요금
+                elif mode == 'pm':
+                    # PM(킥보드) 정보
+                    grid_info = parent_info.get('grid_info', {})
+                    density = grid_info.get('density', 0)
+                    description = f"🛴 PM(킥보드): 출발지에서 탑승 ({access_time:.1f}분, 밀도: {density:.1f}대/km²)"
+                    cost = 1500  # PM 기본 요금
+                else:  # walk
+                    description = f"🚶 도보: 출발지 → 정류장 ({access_time:.1f}분)"
+                    cost = 0
+                
                 segments.append({
                     'type': 'access',
-                    'mode': parent_info['mode'],
-                    'description': f"액세스 ({parent_info['mode']})",
+                    'mode': mode,
+                    'description': description,
                     'duration_min': access_time,
                     'departure_time': self._format_time(dep_time_min),
                     'arrival_time': self._format_time(dep_time_min + access_time),
-                    'cost_won': 0
+                    'cost_won': cost,
+                    'detail_info': parent_info.get('station_info', parent_info.get('grid_info', {}))
                 })
             
             elif parent_info['type'] == 'route':
@@ -1373,15 +1417,35 @@ class OSMDijkstraRAPTOR:
                     'cost_won': 0
                 })
         
-        # 이그레스 구간 추가
+        # 이그레스 구간 추가 - 상세 정보 포함
         if egress:
             egress_time = self._clean_segment_time(egress.access_time_sec / 60)
+            mode = egress.mode
+            
+            # 모드별 상세 정보 생성
+            if mode == 'bike':
+                # 따릉이 반납 정보
+                bike_station_info = getattr(egress, 'station_info', {})
+                station_name = bike_station_info.get('stationName', '정보없음') if bike_station_info else '정보없음'
+                description = f"🚲 따릉이: {station_name} 대여소 → 도착지 ({egress_time:.1f}분, 반납)"
+                cost = 0  # 이그레스는 추가 요금 없음
+            elif mode == 'pm':
+                # PM(킥보드) 하차 정보
+                grid_info = getattr(egress, 'grid_info', {})
+                density = grid_info.get('density', 0) if grid_info else 0
+                description = f"🛴 PM(킥보드): 정류장 → 도착지 ({egress_time:.1f}분, 밀도: {density:.1f}대/km²)"
+                cost = 0  # 이그레스는 추가 요금 없음
+            else:  # walk
+                description = f"🚶 도보: 정류장 → 도착지 ({egress_time:.1f}분)"
+                cost = 0
+            
             segments.append({
                 'type': 'egress',
-                'mode': egress.mode,
-                'description': f"이그레스 ({egress.mode})",
+                'mode': mode,
+                'description': description,
                 'duration_min': egress_time,
-                'cost_won': 0
+                'cost_won': cost,
+                'detail_info': getattr(egress, 'station_info', getattr(egress, 'grid_info', {}))
             })
         
         return segments
