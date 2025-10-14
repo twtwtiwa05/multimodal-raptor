@@ -39,9 +39,9 @@ jobs:
     - name: Test app syntax
       run: |
         python -c "
-        with open('app.py', 'r') as f:
-            compile(f.read(), 'app.py', 'exec')
-        print('✅ app.py syntax valid')
+        with open('streamlit_app.py', 'r') as f:
+            compile(f.read(), 'streamlit_app.py', 'exec')
+        print('✅ streamlit_app.py syntax valid')
         "
 
   # Uncomment for Streamlit Cloud deployment
