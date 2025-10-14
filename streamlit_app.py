@@ -179,8 +179,9 @@ if st.session_state.origin and st.session_state.destination:
     if st.button("🔍 최적 경로 찾기", type="primary"):
         with st.spinner("PART3 OSM 다익스트라 RAPTOR 알고리즘 실행 중..."):
             try:
-                # Import PART1_2 first to register classes for pickle loading
-                import PART1_2
+                # Import PART1_2 classes to register for pickle loading
+                sys.path.append(os.path.join(os.path.dirname(__file__), 'scripts'))
+                from PART1_2 import Stop, Route, Trip, Transfer
                 # Import and run PART3_OSM_DIJKSTRA
                 from PART3_OSM_DIJKSTRA import OSMDijkstraRAPTOR
                 
