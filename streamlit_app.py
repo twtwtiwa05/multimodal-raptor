@@ -51,7 +51,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Title
-st.title("🚌 Multimodal RAPTOR Demo")
+st.title("Multimodal RAPTOR Demo")
 st.markdown("**강남구 멀티모달 교통 라우팅 시스템**")
 st.markdown("지도에서 출발지와 도착지를 클릭하여 최적 경로를 찾아보세요!")
 
@@ -74,7 +74,7 @@ if 'routes' not in st.session_state:
 col1, col2 = st.columns([2, 1])
 
 with col1:
-    st.subheader("📍 강남구 지도")
+    st.subheader("강남구 지도")
     st.markdown("지도를 클릭하여 출발지와 도착지를 설정하세요")
     
     # Create map
@@ -112,7 +112,7 @@ with col1:
     map_data = st_folium(m, width=700, height=500)
 
 with col2:
-    st.subheader("⚙️ 설정")
+    st.subheader("설정")
     
     # Display current coordinates
     if st.session_state.origin:
@@ -126,7 +126,7 @@ with col2:
         st.info("지도를 클릭하여 도착지를 설정하세요")
     
     # Preset locations
-    st.subheader("📌 빠른 설정")
+    st.subheader("빠른 설정")
     presets = {
         "강남역 → 역삼역": [(37.4979, 127.0276), (37.5007, 127.0363)],
         "개포동 → 대치동": [(37.4813, 127.0701), (37.4935, 127.0591)],
@@ -140,7 +140,7 @@ with col2:
             st.rerun()
     
     # Clear button
-    if st.button("🗑️ 초기화"):
+    if st.button("초기화"):
         st.session_state.origin = None
         st.session_state.destination = None
         st.session_state.routes = None
@@ -195,6 +195,7 @@ def initialize_router():
         pm_density_path=os.path.join(base_dir, "data/processed/grid_pm_data/pm_density_map.json")
     )
     return router
+
 
 # Route search
 if st.session_state.origin and st.session_state.destination:
@@ -282,6 +283,10 @@ if st.session_state.origin and st.session_state.destination:
                 st.error("scripts/ 디렉토리에 PART3_OSM_DIJKSTRA.py 파일이 있는지 확인하세요.")
             except Exception as e:
                 st.error(f"❌ 오류 발생: {str(e)}")
+                # 상세한 오류 정보 표시 (디버깅용)
+                import traceback
+                with st.expander("상세 오류 정보 (디버깅용)"):
+                    st.code(traceback.format_exc())
                 st.error("데이터 파일 경로를 확인하세요.")
 
 # Display cached routes
@@ -326,3 +331,4 @@ with st.sidebar:
     - 🚶 도보: **15.0분**, 0원  
     - 🚌 대중교통: **10.2분**, 2,760원
     """)
+    

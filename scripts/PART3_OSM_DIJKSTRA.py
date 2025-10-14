@@ -483,9 +483,9 @@ class OSMDijkstraRAPTOR:
                     mode_details=mode_details
                 )
                 
-                # PM mode일 경우 격자 정보 추가
-                if mode == 'pm' and origin_coords:
-                    density = self._get_pm_density(origin_coords[0], origin_coords[1])
+                # PM mode일 경우 격자 정보 추가  
+                if mode == 'pm' and dest_coords:
+                    density = self._get_pm_density(dest_coords[0], dest_coords[1])
                     result.grid_info = {'density': density, 'wait_time_sec': mode_details.get('wait_time_sec', 0)}
                 
                 results.append(result)
