@@ -16,8 +16,8 @@ A high-performance multimodal transportation routing system implementing Wave-Ex
 
 ###  Online Demo (No Clone Required!)
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/username/multimodal-raptor/main/app.py)
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/username/multimodal-raptor?quickstart=1)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/twtwtiwa05/multimodal-raptor/main/app.py)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/twtwtiwa05/multimodal-raptor?quickstart=1)
 
 ** One-Click Demo:**
 1. Click "Open in GitHub Codespaces" button above

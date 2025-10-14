@@ -16,8 +16,8 @@
 
 ###  온라인 데모 (클론 없이 바로 테스트!)
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/username/multimodal-raptor/main/app.py)
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/username/multimodal-raptor?quickstart=1)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/twtwtiwa05/multimodal-raptor/main/app.py)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/twtwtiwa05/multimodal-raptor?quickstart=1)
 
 ** 원클릭 실행:**
 1. 위 "Open in GitHub Codespaces" 버튼 클릭

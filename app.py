@@ -278,7 +278,7 @@ st.markdown("""
 - **알고리즘**: PART3 OSM 다익스트라 RAPTOR  
 - **작성자**: 김태우 (가천대학교 스마트시티학과)  
 - **지도교수**: 여지호  
-- **GitHub**: [multimodal-raptor](https://github.com/username/multimodal-raptor)
+- **GitHub**: [multimodal-raptor](https://github.com/twtwtiwa05/multimodal-raptor)
 """)
 
 # Sidebar with instructions
