@@ -698,8 +698,6 @@ class OSMDijkstraRAPTOR:
                 'total_cost_won': pm_cost,
                 'egress_stop': 'direct',
                 'rounds': 0,
-                'n_transfers': 0,
-                'total_walk_m': 0,
                 'type': 'direct_pm',
                 'segments': [{
                     'type': 'direct',
@@ -723,9 +721,7 @@ class OSMDijkstraRAPTOR:
                 'final_arrival_time': dep_time_min + walk_time,
                 'total_cost_won': 0,
                 'egress_stop': 'direct',
-                'rounds': 0,
-                'n_transfers': 0,
-                'total_walk_m': int(distance_m),
+                'rounds': 0, 
                 'type': 'direct_walk',
                 'segments': [{
                     'type': 'direct',
@@ -754,7 +750,6 @@ class OSMDijkstraRAPTOR:
                 dest_coords = np.array([[dest_lat, dest_lon]])
                 dest_distances, dest_indices = self.bike_kdtree.query(dest_coords, k=1)
                 walk_from_dock_time = (dest_distances[0] * 111000) / SPEED_WALK_MPS / 60
-                total_walk_distance_m = (distances[0] * 111000) + (dest_distances[0] * 111000)
                 
                 bike_total_time = walk_to_dock_time + (BIKE_PICKUP_TIME_SEC/60) + bike_ride_time + (BIKE_PICKUP_TIME_SEC/60) + walk_from_dock_time
                 
@@ -765,8 +760,6 @@ class OSMDijkstraRAPTOR:
                         'total_cost_won': 1000,
                         'egress_stop': 'direct',
                         'rounds': 0,
-                        'n_transfers': 0,
-                        'total_walk_m': int(total_walk_distance_m),
                         'type': 'direct_bike',
                         'segments': [{
                             'type': 'direct',
@@ -808,8 +801,6 @@ class OSMDijkstraRAPTOR:
             'total_cost_won': pm_cost,
             'egress_stop': 'direct',
             'rounds': 0,
-            'n_transfers': 0,
-            'total_walk_m': 0,
             'type': 'short_pm',
             'priority': 1,
             'segments': [{
@@ -835,8 +826,6 @@ class OSMDijkstraRAPTOR:
             'total_cost_won': 0,
             'egress_stop': 'direct',
             'rounds': 0,
-            'n_transfers': 0,
-            'total_walk_m': int(road_distance_m),
             'type': 'short_walk',
             'priority': 2,
             'segments': [{
@@ -876,8 +865,6 @@ class OSMDijkstraRAPTOR:
                         'total_cost_won': 1000,
                         'egress_stop': 'direct',
                         'rounds': 0,
-                        'n_transfers': 0,
-                        'total_walk_m': int((distances[0] + dest_distances[0]) * 111000),
                         'type': 'short_bike',
                         'priority': 3,
                         'segments': [{
@@ -1280,19 +1267,11 @@ class OSMDijkstraRAPTOR:
                 detailed_segments = self._reconstruct_detailed_path(parent, k, stop_idx, egress, dep_time_min)
                 
                 if detailed_segments:
-                    # 환승 횟수 계산: k-1 (1라운드=액세스, 2라운드=첫 대중교통)
-                    n_transfers = max(0, k - 2)  # 2라운드=0회 환승, 3라운드=1회 환승
-                    
-                    # 도보 거리 계산
-                    total_walk_m = self._calculate_total_walk_distance({'segments': detailed_segments})
-                    
                     journey = {
                         'total_time_min': total_travel_time,
                         'total_cost_won': self._calculate_total_cost(detailed_segments),
                         'final_arrival_time': raptor_arrival_time + (egress.access_time_sec / 60),
                         'rounds': k,
-                        'n_transfers': n_transfers,
-                        'total_walk_m': int(total_walk_m),
                         'segments': detailed_segments
                     }
                     
