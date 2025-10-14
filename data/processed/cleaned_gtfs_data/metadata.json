@@ -1,0 +1,14 @@
+{
+  "created_at": "2025-09-20T22:03:40.765529",
+  "stats": {
+    "stops": 212105,
+    "routes": 27138,
+    "trips": 349580,
+    "stop_times": 20871237
+  },
+  "issues_fixed": [
+    "BOM 문자 제거",
+    "컬럼명 정리",
+    "routes 데이터 복구"
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "Multimodal RAPTOR",
+  "image": "mcr.microsoft.com/devcontainers/python:3.9",
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {}
+  },
+  "postCreateCommand": "pip install -r requirements_web.txt",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.pylint"
+      ]
+    }
+  },
+  "forwardPorts": [8501],
+  "portsAttributes": {
+    "8501": {
+      "label": "Streamlit",
+      "onAutoForward": "openBrowser"
+    }
+  }
+}
