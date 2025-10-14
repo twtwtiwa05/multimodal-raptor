@@ -698,8 +698,6 @@ class OSMDijkstraRAPTOR:
                 'total_cost_won': pm_cost,
                 'egress_stop': 'direct',
                 'rounds': 0,
-                'n_transfers': 0,
-                'total_walk_m': 0,
                 'type': 'direct_pm',
                 'segments': [{
                     'type': 'direct',
@@ -723,9 +721,7 @@ class OSMDijkstraRAPTOR:
                 'final_arrival_time': dep_time_min + walk_time,
                 'total_cost_won': 0,
                 'egress_stop': 'direct',
-                'rounds': 0,
-                'n_transfers': 0,
-                'total_walk_m': int(distance_m),
+                'rounds': 0, 
                 'type': 'direct_walk',
                 'segments': [{
                     'type': 'direct',
@@ -754,7 +750,6 @@ class OSMDijkstraRAPTOR:
                 dest_coords = np.array([[dest_lat, dest_lon]])
                 dest_distances, dest_indices = self.bike_kdtree.query(dest_coords, k=1)
                 walk_from_dock_time = (dest_distances[0] * 111000) / SPEED_WALK_MPS / 60
-                total_walk_distance_m = (distances[0] * 111000) + (dest_distances[0] * 111000)
                 
                 bike_total_time = walk_to_dock_time + (BIKE_PICKUP_TIME_SEC/60) + bike_ride_time + (BIKE_PICKUP_TIME_SEC/60) + walk_from_dock_time
                 
@@ -765,8 +760,6 @@ class OSMDijkstraRAPTOR:
                         'total_cost_won': 1000,
                         'egress_stop': 'direct',
                         'rounds': 0,
-                        'n_transfers': 0,
-                        'total_walk_m': int(total_walk_distance_m),
                         'type': 'direct_bike',
                         'segments': [{
                             'type': 'direct',
@@ -808,8 +801,6 @@ class OSMDijkstraRAPTOR:
             'total_cost_won': pm_cost,
             'egress_stop': 'direct',
             'rounds': 0,
-            'n_transfers': 0,
-            'total_walk_m': 0,
             'type': 'short_pm',
             'priority': 1,
             'segments': [{
@@ -835,8 +826,6 @@ class OSMDijkstraRAPTOR:
             'total_cost_won': 0,
             'egress_stop': 'direct',
             'rounds': 0,
-            'n_transfers': 0,
-            'total_walk_m': int(road_distance_m),
             'type': 'short_walk',
             'priority': 2,
             'segments': [{
@@ -876,8 +865,6 @@ class OSMDijkstraRAPTOR:
                         'total_cost_won': 1000,
                         'egress_stop': 'direct',
                         'rounds': 0,
-                        'n_transfers': 0,
-                        'total_walk_m': int((distances[0] + dest_distances[0]) * 111000),
                         'type': 'short_bike',
                         'priority': 3,
                         'segments': [{
@@ -1280,19 +1267,11 @@ class OSMDijkstraRAPTOR:
                 detailed_segments = self._reconstruct_detailed_path(parent, k, stop_idx, egress, dep_time_min)
                 
                 if detailed_segments:
-                    # 환승 횟수 계산: k-1 (1라운드=액세스, 2라운드=첫 대중교통)
-                    n_transfers = max(0, k - 2)  # 2라운드=0회 환승, 3라운드=1회 환승
-                    
-                    # 도보 거리 계산
-                    total_walk_m = self._calculate_total_walk_distance({'segments': detailed_segments})
-                    
                     journey = {
                         'total_time_min': total_travel_time,
                         'total_cost_won': self._calculate_total_cost(detailed_segments),
                         'final_arrival_time': raptor_arrival_time + (egress.access_time_sec / 60),
                         'rounds': k,
-                        'n_transfers': n_transfers,
-                        'total_walk_m': int(total_walk_m),
                         'segments': detailed_segments
                     }
                     
@@ -1405,43 +1384,7 @@ class OSMDijkstraRAPTOR:
                 'cost_won': 0
             })
         
-        # 연속된 같은 노선 구간 합치기
-        segments = self._merge_consecutive_routes(segments)
-        
         return segments
-    
-    def _merge_consecutive_routes(self, segments):
-        """연속된 같은 노선의 구간들을 합치기"""
-        if not segments:
-            return segments
-        
-        merged_segments = []
-        current_segment = None
-        
-        for segment in segments:
-            if segment['type'] == 'transit' and current_segment and current_segment['type'] == 'transit':
-                # 같은 노선인지 확인
-                if (current_segment.get('route_name') == segment.get('route_name') and
-                    current_segment.get('mode') == segment.get('mode')):
-                    
-                    # 같은 노선이면 합치기
-                    current_segment['duration_min'] += segment['duration_min']
-                    current_segment['cost_won'] = max(current_segment['cost_won'], segment['cost_won'])  # 요금은 한 번만
-                    current_segment['to_stop'] = segment['to_stop']
-                    current_segment['arrival_time'] = segment['arrival_time']
-                    current_segment['description'] = f"{current_segment['route_name']}: {current_segment['from_stop']} → {current_segment['to_stop']}"
-                    continue
-            
-            # 이전 세그먼트를 저장하고 새 세그먼트 시작
-            if current_segment:
-                merged_segments.append(current_segment)
-            current_segment = segment.copy()
-        
-        # 마지막 세그먼트 추가
-        if current_segment:
-            merged_segments.append(current_segment)
-        
-        return merged_segments
     
     def _calculate_total_cost(self, segments):
         """세그먼트들의 총 비용 계산"""
