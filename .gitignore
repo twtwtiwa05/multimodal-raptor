@@ -59,6 +59,9 @@ Thumbs.db
 # Ignore raw data (too large for GitHub)
 data/raw/
 
+# Ignore large processed files (>100MB)
+data/processed/cleaned_gtfs_data/stop_times.csv
+
 # Test coverage
 .coverage
 htmlcov/
