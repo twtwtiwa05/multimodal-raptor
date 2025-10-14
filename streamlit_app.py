@@ -16,6 +16,13 @@ import time
 sys.path.append(os.path.join(os.path.dirname(__file__), 'scripts'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '.'))
 
+# Import PART1_2 classes globally to register for pickle loading
+try:
+    from PART1_2 import Stop, Route, Trip
+except ImportError:
+    st.error("PART1_2 모듈을 찾을 수 없습니다. scripts/ 디렉토리를 확인하세요.")
+    st.stop()
+
 # Set page config
 st.set_page_config(
     page_title="Multimodal RAPTOR Demo",
@@ -176,9 +183,6 @@ elif map_data['last_clicked']:
 @st.cache_resource
 def initialize_router():
     """캐시된 라우터 초기화 - 한 번만 로드됨"""
-    # Import PART1_2 classes to register for pickle loading
-    sys.path.append(os.path.join(os.path.dirname(__file__), 'scripts'))
-    from PART1_2 import Stop, Route, Trip
     # Import and run PART3_OSM_DIJKSTRA
     from PART3_OSM_DIJKSTRA import OSMDijkstraRAPTOR
     
