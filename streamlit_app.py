@@ -190,7 +190,7 @@ if st.session_state.origin and st.session_state.destination:
                 router = OSMDijkstraRAPTOR(
                     raptor_data_path=os.path.join(base_dir, "data/processed/gangnam_raptor_data/raptor_data.pkl"),
                     osm_graph_path=os.path.join(base_dir, "data/processed/gangnam_road_network.pkl"),
-                    bike_stations_path=os.path.join(base_dir, "data/raw/bike_stations_simple/ttareungee_stations.csv"),
+                    bike_stations_path=os.path.join(base_dir, "data/processed/bike_stations_simple/ttareungee_stations.csv"),
                     pm_density_path=os.path.join(base_dir, "data/processed/grid_pm_data/pm_density_map.json")
                 )
                 

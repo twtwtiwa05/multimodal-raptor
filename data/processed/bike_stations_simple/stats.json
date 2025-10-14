@@ -1,0 +1,26 @@
+{
+  "total_stations": 693,
+  "total_bikes": 5138,
+  "avg_bikes_per_station": 7.414141414141414,
+  "min_bikes_per_station": 0,
+  "max_bikes_per_station": 15,
+  "empty_stations": 40,
+  "distribution": {
+    "9": 59,
+    "5": 57,
+    "1": 50,
+    "13": 45,
+    "3": 45,
+    "8": 44,
+    "2": 42,
+    "14": 41,
+    "15": 41,
+    "0": 40,
+    "10": 40,
+    "11": 39,
+    "12": 39,
+    "6": 39,
+    "7": 36,
+    "4": 36
+  }
+}
