@@ -699,6 +699,8 @@ class OSMDijkstraRAPTOR:
                 'egress_stop': 'direct',
                 'rounds': 0,
                 'type': 'direct_pm',
+                'total_walk_m': 0,
+                'n_transfers': 0,
                 'segments': [{
                     'type': 'direct',
                     'mode': 'pm',
@@ -723,6 +725,8 @@ class OSMDijkstraRAPTOR:
                 'egress_stop': 'direct',
                 'rounds': 0, 
                 'type': 'direct_walk',
+                'total_walk_m': road_distance_m,
+                'n_transfers': 0,
                 'segments': [{
                     'type': 'direct',
                     'mode': 'walk',
@@ -793,7 +797,7 @@ class OSMDijkstraRAPTOR:
         pm_wait_time = self._get_pm_wait_time(origin_lat, origin_lon)
         pm_ride_time = road_distance_m / SPEED_PM_MPS
         pm_total_time = (pm_wait_time + pm_ride_time) / 60
-        pm_cost = max(1500, int(road_distance_m / 100) * 150)
+        pm_cost = max(1000, int(road_distance_m / 100) * 100)  # 100m당 100원, 최소 1000원
         
         short_journeys.append({
             'total_time_min': pm_total_time,
@@ -803,6 +807,8 @@ class OSMDijkstraRAPTOR:
             'rounds': 0,
             'type': 'short_pm',
             'priority': 1,
+            'total_walk_m': 0,
+            'n_transfers': 0,
             'segments': [{
                 'type': 'direct',
                 'mode': 'pm',
@@ -828,6 +834,8 @@ class OSMDijkstraRAPTOR:
             'rounds': 0,
             'type': 'short_walk',
             'priority': 2,
+            'total_walk_m': road_distance_m,
+            'n_transfers': 0,
             'segments': [{
                 'type': 'direct',
                 'mode': 'walk',
@@ -867,6 +875,8 @@ class OSMDijkstraRAPTOR:
                         'rounds': 0,
                         'type': 'short_bike',
                         'priority': 3,
+                        'total_walk_m': (distances[0] * 111000) + (dest_distances[0] * 111000),
+                        'n_transfers': 0,
                         'segments': [{
                             'type': 'direct',
                             'mode': 'bike',
@@ -1272,7 +1282,9 @@ class OSMDijkstraRAPTOR:
                         'total_cost_won': self._calculate_total_cost(detailed_segments),
                         'final_arrival_time': raptor_arrival_time + (egress.access_time_sec / 60),
                         'rounds': k,
-                        'segments': detailed_segments
+                        'segments': detailed_segments,
+                        'total_walk_m': self._calculate_total_walk_distance({'segments': detailed_segments}),
+                        'n_transfers': len([s for s in detailed_segments if s.get('type') == 'transfer'])
                     }
                     
                     journeys.append(journey)
@@ -1403,32 +1415,58 @@ class OSMDijkstraRAPTOR:
         return round(max(duration_min, MIN_SEGMENT_TIME_MIN), 1)
     
     def _create_journey_signature(self, journey: Dict[str, Any]) -> str:
-        """여정 시그니처 생성 (중복 제거용)"""
+        """여정 시그니처 생성 (중복 제거용) - 개선된 버전"""
         segments = journey.get('segments', [])
         
-        # 대중교통 세그먼트만 추출하여 시그니처 생성
-        transit_parts = []
+        # 모든 세그먼트를 고려한 상세 시그니처 생성
+        signature_parts = []
+        
         for seg in segments:
-            if seg.get('type') == 'transit':
+            seg_type = seg.get('type', '')
+            mode = seg.get('mode', '')
+            
+            if seg_type == 'transit':
+                # 대중교통: 노선명 + 출발역 + 도착역 (시간 제외로 유연성 확보)
                 route_name = seg.get('route_name', '')
                 from_stop = seg.get('from_stop', '')
                 to_stop = seg.get('to_stop', '')
-                departure_time = seg.get('departure_time', '')
-                arrival_time = seg.get('arrival_time', '')
-                transit_parts.append(f"{route_name}|{from_stop}|{to_stop}|{departure_time}|{arrival_time}")
+                signature_parts.append(f"transit:{route_name}:{from_stop}:{to_stop}")
+            
+            elif seg_type == 'access':
+                # 액세스: 모드만 포함 (PM, 따릉이 등)
+                signature_parts.append(f"access:{mode}")
+            
+            elif seg_type == 'egress':
+                # 이그레스: 모드만 포함
+                signature_parts.append(f"egress:{mode}")
+            
+            elif seg_type == 'transfer':
+                # 환승: 출발-도착 정류장 포함
+                from_stop = seg.get('from_stop', '')
+                to_stop = seg.get('to_stop', '')
+                signature_parts.append(f"transfer:{from_stop}:{to_stop}")
         
-        # 대중교통이 없으면 여정 타입으로 구분
-        if not transit_parts:
-            return journey.get('type', 'direct')
+        # 세그먼트가 없으면 여정 타입으로 구분
+        if not signature_parts:
+            journey_type = journey.get('type', 'unknown')
+            total_time = journey.get('total_time_min', 0)
+            return f"direct:{journey_type}:{int(total_time)}"
         
-        return "||".join(transit_parts)
+        return "||".join(signature_parts)
     
     def _deduplicate_journeys(self, journeys: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """중복 여정 제거: 동일 경로에서 도보 거리가 짧은 것만 유지"""
         
+        # 1단계: 비효율적 경로 필터링
+        efficient_journeys = []
+        for journey in journeys:
+            if not self._is_inefficient_journey(journey):
+                efficient_journeys.append(journey)
+        
+        # 2단계: 중복 제거
         signature_groups = {}
         
-        for journey in journeys:
+        for journey in efficient_journeys:
             signature = self._create_journey_signature(journey)
             
             if signature not in signature_groups:
@@ -1446,6 +1484,48 @@ class OSMDijkstraRAPTOR:
                 deduplicated.append(best_journey)
         
         return deduplicated
+    
+    def _is_inefficient_journey(self, journey: Dict[str, Any]) -> bool:
+        """비효율적인 여정인지 판단 (같은 정류장 왕복, 과도한 우회 등)"""
+        segments = journey.get('segments', [])
+        
+        # 정류장 방문 순서 추적
+        stops_visited = []
+        
+        for seg in segments:
+            if seg.get('type') == 'transit':
+                from_stop = seg.get('from_stop', '')
+                to_stop = seg.get('to_stop', '')
+                if from_stop:
+                    stops_visited.append(from_stop)
+                if to_stop:
+                    stops_visited.append(to_stop)
+            elif seg.get('type') == 'transfer':
+                from_stop = seg.get('from_stop', '')
+                to_stop = seg.get('to_stop', '')
+                if from_stop:
+                    stops_visited.append(from_stop)
+                if to_stop:
+                    stops_visited.append(to_stop)
+        
+        # 1. 같은 정류장을 3번 이상 방문하는 경우 (과도한 왕복)
+        from collections import Counter
+        stop_counts = Counter(stops_visited)
+        for stop, count in stop_counts.items():
+            if count >= 3:
+                return True
+        
+        # 2. 연속된 같은 정류장 (A→A 이동)
+        for i in range(len(stops_visited) - 1):
+            if stops_visited[i] == stops_visited[i + 1]:
+                return True
+                
+        # 3. 환승 횟수가 4회 이상인 경우 (과도한 환승)
+        transfer_count = journey.get('n_transfers', 0)
+        if transfer_count >= 4:
+            return True
+            
+        return False
     
     def _calculate_total_walk_distance(self, journey: Dict[str, Any]) -> float:
         """여정의 총 도보 거리 계산"""
