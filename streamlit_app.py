@@ -26,7 +26,7 @@ except ImportError:
 # Set page config
 st.set_page_config(
     page_title="Multimodal RAPTOR Demo",
-    page_icon="🚌",
+    page_icon=":bus:",
     layout="wide"
 )
 
@@ -104,7 +104,7 @@ with col1:
     if st.session_state.destination:
         folium.Marker(
             st.session_state.destination,
-            popup="🏁 도착지",
+            popup="도착지",
             icon=folium.Icon(color='red', icon='stop')
         ).add_to(m)
     
@@ -121,7 +121,7 @@ with col2:
         st.info("지도를 클릭하여 출발지를 설정하세요")
     
     if st.session_state.destination:
-        st.success(f"🏁 도착지: {st.session_state.destination[0]:.4f}, {st.session_state.destination[1]:.4f}")
+        st.success(f"도착지: {st.session_state.destination[0]:.4f}, {st.session_state.destination[1]:.4f}")
     else:
         st.info("지도를 클릭하여 도착지를 설정하세요")
     
@@ -199,14 +199,14 @@ def initialize_router():
 
 # Route search
 if st.session_state.origin and st.session_state.destination:
-    st.subheader("🚀 경로 탐색")
+    st.subheader("경로 탐색")
     
-    if st.button("🔍 최적 경로 찾기", type="primary"):
+    if st.button("최적 경로 찾기", type="primary"):
         with st.spinner("PART3 OSM 다익스트라 RAPTOR 알고리즘 실행 중..."):
             try:
                 # Use cached router initialization
                 if 'router_loaded' not in st.session_state:
-                    st.info("🔄 첫 실행: 데이터 로딩 중... (이후 실행은 빨라집니다)")
+                    st.info("첫 실행: 데이터 로딩 중... (이후 실행은 빨라집니다)")
                     st.session_state.router_loaded = True
                 router = initialize_router()
                 
@@ -225,7 +225,7 @@ if st.session_state.origin and st.session_state.destination:
                 
                 # Display results
                 if routes:
-                    st.success(f"✅ {len(routes)}개 경로 발견 (실행시간: {end_time - start_time:.2f}초)")
+                    st.success(f"{len(routes)}개 경로 발견 (실행시간: {end_time - start_time:.2f}초)")
                     
                     # Display metrics
                     best_route = routes[0]
@@ -234,7 +234,7 @@ if st.session_state.origin and st.session_state.destination:
                     with col1:
                         st.markdown(f"""
                         <div class="metric-card">
-                            <h4>⏱️ 소요시간</h4>
+                            <h4>소요시간</h4>
                             <h2>{best_route.get('total_time_min', 0):.1f}분</h2>
                         </div>
                         """, unsafe_allow_html=True)
@@ -242,7 +242,7 @@ if st.session_state.origin and st.session_state.destination:
                     with col2:
                         st.markdown(f"""
                         <div class="metric-card">
-                            <h4>💰 비용</h4>
+                            <h4>비용</h4>
                             <h2>{best_route.get('total_cost_won', 0):,}원</h2>
                         </div>
                         """, unsafe_allow_html=True)
@@ -250,7 +250,7 @@ if st.session_state.origin and st.session_state.destination:
                     with col3:
                         st.markdown(f"""
                         <div class="metric-card">
-                            <h4>🔄 환승</h4>
+                            <h4>환승</h4>
                             <h2>{best_route.get('n_transfers', 0)}회</h2>
                         </div>
                         """, unsafe_allow_html=True)
@@ -276,13 +276,13 @@ if st.session_state.origin and st.session_state.destination:
                                     description = segment.get('description', '정보 없음')
                                     st.markdown(f"{j}. {description}")
                 else:
-                    st.error("❌ 경로를 찾을 수 없습니다")
+                    st.error("경로를 찾을 수 없습니다")
                     
             except ImportError as e:
-                st.error(f"❌ PART3_OSM_DIJKSTRA 모듈을 찾을 수 없습니다: {str(e)}")
+                st.error(f"PART3_OSM_DIJKSTRA 모듈을 찾을 수 없습니다: {str(e)}")
                 st.error("scripts/ 디렉토리에 PART3_OSM_DIJKSTRA.py 파일이 있는지 확인하세요.")
             except Exception as e:
-                st.error(f"❌ 오류 발생: {str(e)}")
+                st.error(f"오류 발생: {str(e)}")
                 # 상세한 오류 정보 표시 (디버깅용)
                 import traceback
                 with st.expander("상세 오류 정보 (디버깅용)"):
@@ -297,7 +297,7 @@ elif st.session_state.routes:
 # Footer
 st.markdown("---")
 st.markdown("""
-**🎓 연구 정보**  
+**연구 정보**  
 - **알고리즘**: PART3 OSM 다익스트라 RAPTOR  
 - **작성자**: 김태우 (가천대학교 스마트시티학과)  
 - **지도교수**: 여지호  
@@ -306,17 +306,17 @@ st.markdown("""
 
 # Sidebar with instructions
 with st.sidebar:
-    st.header("📖 사용법")
+    st.header("사용법")
     st.markdown("""
     1. **출발지 설정**: 지도를 클릭하여 출발지를 설정하세요
     2. **도착지 설정**: 지도를 다시 클릭하여 도착지를 설정하세요  
     3. **경로 탐색**: "최적 경로 찾기" 버튼을 클릭하세요
     4. **결과 확인**: 여러 경로 옵션과 상세 정보를 확인하세요
     
-    💡 **팁**: 빠른 설정 버튼을 사용하여 미리 정의된 경로를 테스트해보세요!
+    **팁**: 빠른 설정 버튼을 사용하여 미리 정의된 경로를 테스트해보세요!
     """)
     
-    st.header("🔧 기술 정보")
+    st.header("기술 정보")
     st.markdown("""
     - **알고리즘**: OSM 다익스트라 RAPTOR
     - **교통수단**: 버스, 지하철, 따릉이, PM
@@ -324,11 +324,11 @@ with st.sidebar:
     - **성능**: ~7-8초 쿼리 시간
     """)
     
-    st.header("📊 예상 결과")
+    st.header("예상 결과")
     st.markdown("""
     **강남역 → 역삼역 (1.1km)**:
-    - 🛴 PM 직접: **5.5분**, 1,500원
-    - 🚶 도보: **15.0분**, 0원  
-    - 🚌 대중교통: **10.2분**, 2,760원
+    - PM 직접: **5.5분**, 1,500원
+    - 도보: **15.0분**, 0원  
+    - 대중교통: **10.2분**, 2,760원
     """)
     
