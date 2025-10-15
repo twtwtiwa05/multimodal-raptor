@@ -704,6 +704,7 @@ class OSMDijkstraRAPTOR:
                 'segments': [{
                     'type': 'direct',
                     'mode': 'pm',
+                    'description': f'PM 직접: {road_distance_m:.0f}m ({pm_total_time:.1f}분)',
                     'duration_min': pm_total_time,
                     'distance_m': road_distance_m,
                     'cost_won': pm_cost,
@@ -730,6 +731,7 @@ class OSMDijkstraRAPTOR:
                 'segments': [{
                     'type': 'direct',
                     'mode': 'walk',
+                    'description': f'도보 직접: {road_distance_m:.0f}m ({walk_time:.1f}분)',
                     'duration_min': walk_time,
                     'distance_m': road_distance_m,
                     'cost_won': 0
@@ -1445,8 +1447,8 @@ class OSMDijkstraRAPTOR:
         # 디버깅: 중복 제거 임시 비활성화 (경로 수 확인용)
         logger.info(f"중복제거 전 경로 수: {len(journeys)}")
         
-        # 임시 테스트: 중복 제거 완전 비활성화
-        DISABLE_DEDUPLICATION = True  # 테스트용 - 더 많은 경로 확인
+        # 적절한 수준의 중복 제거 활성화
+        DISABLE_DEDUPLICATION = False  # 스마트 중복 제거 사용
         
         if DISABLE_DEDUPLICATION:
             logger.info("⚠️ 중복 제거 비활성화 (테스트용)")
