@@ -1415,55 +1415,59 @@ class OSMDijkstraRAPTOR:
         return round(max(duration_min, MIN_SEGMENT_TIME_MIN), 1)
     
     def _create_journey_signature(self, journey: Dict[str, Any]) -> str:
-        """여정 시그니처 생성 (중복 제거용) - 개선된 버전"""
+        """여정 시그니처 생성 (중복 제거용) - 완화된 버전"""
         segments = journey.get('segments', [])
         
-        # 모든 세그먼트를 고려한 상세 시그니처 생성
-        signature_parts = []
+        # 대중교통 세그먼트만 고려 (환승 정보 제외로 완화)
+        transit_parts = []
         
         for seg in segments:
-            seg_type = seg.get('type', '')
-            mode = seg.get('mode', '')
-            
-            if seg_type == 'transit':
-                # 대중교통: 노선명 + 출발역 + 도착역 (시간 제외로 유연성 확보)
+            if seg.get('type') == 'transit':
+                # 대중교통: 노선명 + 출발역 + 도착역만 (환승 정보 제외)
                 route_name = seg.get('route_name', '')
                 from_stop = seg.get('from_stop', '')
                 to_stop = seg.get('to_stop', '')
-                signature_parts.append(f"transit:{route_name}:{from_stop}:{to_stop}")
-            
-            elif seg_type == 'access':
-                # 액세스: 모드만 포함 (PM, 따릉이 등)
-                signature_parts.append(f"access:{mode}")
-            
-            elif seg_type == 'egress':
-                # 이그레스: 모드만 포함
-                signature_parts.append(f"egress:{mode}")
-            
-            elif seg_type == 'transfer':
-                # 환승: 출발-도착 정류장 포함
-                from_stop = seg.get('from_stop', '')
-                to_stop = seg.get('to_stop', '')
-                signature_parts.append(f"transfer:{from_stop}:{to_stop}")
+                transit_parts.append(f"{route_name}:{from_stop}:{to_stop}")
         
-        # 세그먼트가 없으면 여정 타입으로 구분
-        if not signature_parts:
+        # 대중교통이 없으면 여정 타입으로 구분
+        if not transit_parts:
             journey_type = journey.get('type', 'unknown')
-            total_time = journey.get('total_time_min', 0)
-            return f"direct:{journey_type}:{int(total_time)}"
+            # 직접 경로의 경우 모드별로 구분
+            if journey_type.startswith('direct_') or journey_type.startswith('short_'):
+                return journey_type  # 'direct_pm', 'direct_walk', 'short_bike' 등
+            return journey_type
         
-        return "||".join(signature_parts)
+        return "||".join(transit_parts)
     
     def _deduplicate_journeys(self, journeys: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """중복 여정 제거: 동일 경로에서 도보 거리가 짧은 것만 유지"""
         
-        # 1단계: 비효율적 경로 필터링
+        # 디버깅: 중복 제거 임시 비활성화 (경로 수 확인용)
+        logger.info(f"중복제거 전 경로 수: {len(journeys)}")
+        
+        # 임시 테스트: 중복 제거 완전 비활성화
+        DISABLE_DEDUPLICATION = True  # 테스트용 - 더 많은 경로 확인
+        
+        if DISABLE_DEDUPLICATION:
+            logger.info("⚠️ 중복 제거 비활성화 (테스트용)")
+            # 매우 기본적인 필터링만
+            efficient_journeys = []
+            for journey in journeys:
+                if not self._is_obviously_inefficient_journey(journey):
+                    efficient_journeys.append(journey)
+            logger.info(f"기본 필터링 후: {len(efficient_journeys)}")
+            return efficient_journeys[:8]  # 최대 8개만 반환
+        
+        # 1단계: 매우 기본적인 필터링만
         efficient_journeys = []
         for journey in journeys:
-            if not self._is_inefficient_journey(journey):
+            # 매우 명백한 비효율적 경로만 제거
+            if not self._is_obviously_inefficient_journey(journey):
                 efficient_journeys.append(journey)
         
-        # 2단계: 중복 제거
+        logger.info(f"비효율적 경로 제거 후: {len(efficient_journeys)}")
+        
+        # 2단계: 중복 제거 (완화)
         signature_groups = {}
         
         for journey in efficient_journeys:
@@ -1473,17 +1477,66 @@ class OSMDijkstraRAPTOR:
                 signature_groups[signature] = []
             signature_groups[signature].append(journey)
         
-        # 각 그룹에서 최적 여정 선택
+        # 각 그룹에서 다양한 옵션 유지 (완화된 중복 제거)
         deduplicated = []
         for signature, group in signature_groups.items():
             if len(group) == 1:
                 deduplicated.extend(group)
             else:
-                # 동일 시그니처 그룹에서 도보 거리가 가장 짧은 것 선택
-                best_journey = min(group, key=lambda j: self._calculate_total_walk_distance(j))
-                deduplicated.append(best_journey)
+                # 시간 차이가 큰 경우 여러 개 유지
+                group_sorted = sorted(group, key=lambda j: j.get('total_time_min', 0))
+                
+                # 첫 번째는 무조건 추가
+                deduplicated.append(group_sorted[0])
+                
+                # 나머지는 시간 차이가 5분 이상인 경우에만 추가
+                last_time = group_sorted[0].get('total_time_min', 0)
+                for journey in group_sorted[1:]:
+                    current_time = journey.get('total_time_min', 0)
+                    if current_time - last_time >= 5:  # 5분 이상 차이
+                        deduplicated.append(journey)
+                        last_time = current_time
+                        if len([j for j in deduplicated if self._create_journey_signature(j) == signature]) >= 3:
+                            break  # 같은 시그니처에서 최대 3개까지만
+        
+        logger.info(f"최종 중복제거 후 경로 수: {len(deduplicated)}")
+        
+        # 디버깅: 각 경로의 시그니처 출력
+        for i, journey in enumerate(deduplicated):
+            signature = self._create_journey_signature(journey)
+            time_min = journey.get('total_time_min', 0)
+            cost = journey.get('total_cost_won', 0)
+            logger.info(f"경로 {i+1}: {signature} - {time_min:.1f}분, {cost}원")
         
         return deduplicated
+    
+    def _is_obviously_inefficient_journey(self, journey: Dict[str, Any]) -> bool:
+        """매우 명백하게 비효율적인 여정만 판단 (완화된 버전)"""
+        segments = journey.get('segments', [])
+        
+        # 정류장 방문 순서 추적
+        stops_visited = []
+        
+        for seg in segments:
+            if seg.get('type') == 'transit':
+                from_stop = seg.get('from_stop', '')
+                to_stop = seg.get('to_stop', '')
+                if from_stop:
+                    stops_visited.append(from_stop)
+                if to_stop:
+                    stops_visited.append(to_stop)
+        
+        # 1. 연속된 같은 정류장만 제거 (A→A 이동)
+        for i in range(len(stops_visited) - 1):
+            if stops_visited[i] == stops_visited[i + 1]:
+                return True
+                
+        # 2. 환승 횟수가 8회 이상인 극단적인 경우만 제거
+        transfer_count = journey.get('n_transfers', 0)
+        if transfer_count >= 8:
+            return True
+            
+        return False
     
     def _is_inefficient_journey(self, journey: Dict[str, Any]) -> bool:
         """비효율적인 여정인지 판단 (같은 정류장 왕복, 과도한 우회 등)"""
@@ -1508,21 +1561,21 @@ class OSMDijkstraRAPTOR:
                 if to_stop:
                     stops_visited.append(to_stop)
         
-        # 1. 같은 정류장을 3번 이상 방문하는 경우 (과도한 왕복)
+        # 1. 같은 정류장을 5번 이상 방문하는 경우만 제거 (완화)
         from collections import Counter
         stop_counts = Counter(stops_visited)
         for stop, count in stop_counts.items():
-            if count >= 3:
+            if count >= 5:  # 3→5로 완화
                 return True
         
-        # 2. 연속된 같은 정류장 (A→A 이동)
+        # 2. 연속된 같은 정류장 (A→A 이동) - 유지
         for i in range(len(stops_visited) - 1):
             if stops_visited[i] == stops_visited[i + 1]:
                 return True
                 
-        # 3. 환승 횟수가 4회 이상인 경우 (과도한 환승)
+        # 3. 환승 횟수가 6회 이상인 경우만 제거 (완화)
         transfer_count = journey.get('n_transfers', 0)
-        if transfer_count >= 4:
+        if transfer_count >= 6:  # 4→6으로 완화
             return True
             
         return False
