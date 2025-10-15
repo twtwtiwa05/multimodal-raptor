@@ -14,7 +14,7 @@
 
 ##  빠른 시작
 
-###  온라인 데모 (클론 없이 바로 테스트!)
+###  온라인 데모 
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/twtwtiwa05/multimodal-raptor/main/app.py)
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/twtwtiwa05/multimodal-raptor?quickstart=1)
@@ -23,8 +23,8 @@
 1. 위 "Open in GitHub Codespaces" 버튼 클릭
 2. 자동으로 환경 설정됨
 3. 터미널에서: `streamlit run streamlit_app.py`
-4. 브라우저에서 강남구 지도 클릭하여 테스트!
-
+4. 브라우저에서 강남구 지도 클릭하여
+5. 
 ###  로컬 실행
 ```bash
 # 웹 데모 실행
@@ -320,5 +320,6 @@ MIT 라이선스 - 자세한 내용은 [LICENSE](LICENSE) 파일 참조
 
 **프로젝트 기간**: 2024년 8월 - 2024년 12월  
 **연구 분야**: 멀티모달 교통, 도시 이동성, 알고리즘 혁신  
+
 
 **키워드**: RAPTOR, 파동-확산, OSM 다익스트라, 멀티모달 라우팅, 대중교통, 공유 모빌리티, 서울
