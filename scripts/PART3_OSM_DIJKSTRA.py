@@ -1460,12 +1460,9 @@ class OSMDijkstraRAPTOR:
             logger.info(f"기본 필터링 후: {len(efficient_journeys)}")
             return efficient_journeys[:8]  # 최대 8개만 반환
         
-        # 1단계: 매우 기본적인 필터링만
-        efficient_journeys = []
-        for journey in journeys:
-            # 매우 명백한 비효율적 경로만 제거
-            if not self._is_obviously_inefficient_journey(journey):
-                efficient_journeys.append(journey)
+        # 1단계: 비효율적 경로 필터링 임시 비활성화
+        logger.info("⚠️ 비효율적 경로 필터링 임시 비활성화 (디버깅용)")
+        efficient_journeys = journeys  # 모든 경로 유지
         
         logger.info(f"비효율적 경로 제거 후: {len(efficient_journeys)}")
         
@@ -1511,6 +1508,24 @@ class OSMDijkstraRAPTOR:
             logger.info(f"경로 {i+1}: {signature} - {time_min:.1f}분, {cost}원")
         
         return deduplicated
+    
+    def _debug_journey_info(self, journey: Dict[str, Any]) -> str:
+        """디버깅용 여정 정보 출력"""
+        segments = journey.get('segments', [])
+        time_min = journey.get('total_time_min', 0)
+        cost = journey.get('total_cost_won', 0)
+        transfers = journey.get('n_transfers', 0)
+        
+        # 정류장 순서 추출
+        stops = []
+        for seg in segments:
+            if seg.get('type') == 'transit':
+                from_stop = seg.get('from_stop', '')
+                to_stop = seg.get('to_stop', '')
+                if from_stop: stops.append(from_stop)
+                if to_stop: stops.append(to_stop)
+        
+        return f"{time_min:.1f}분, {cost}원, {transfers}환승, 정류장: {' → '.join(stops[:3])}{'...' if len(stops) > 3 else ''}"
     
     def _is_obviously_inefficient_journey(self, journey: Dict[str, Any]) -> bool:
         """매우 명백하게 비효율적인 여정만 판단 (완화된 버전)"""
