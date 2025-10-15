@@ -1387,6 +1387,9 @@ class OSMDijkstraRAPTOR:
         # 연속된 같은 노선 병합
         segments = self._merge_consecutive_routes(segments)
         
+        # 비효율적 환승 제거 (왕복 이동 등)
+        segments = self._remove_roundtrip_transfers(segments)
+        
         return segments
     
     def _merge_consecutive_routes(self, segments: List[Dict]) -> List[Dict]:
@@ -1447,6 +1450,41 @@ class OSMDijkstraRAPTOR:
             i = j
         
         return merged
+    
+    def _remove_roundtrip_transfers(self, segments: List[Dict]) -> List[Dict]:
+        """비효율적인 왕복 환승 제거 (A→B→A 패턴)"""
+        if len(segments) < 3:
+            return segments
+        
+        cleaned = []
+        i = 0
+        
+        while i < len(segments):
+            # 3개 연속 세그먼트 체크: A→B, B→A 패턴 찾기
+            if i + 2 < len(segments):
+                seg1 = segments[i]
+                seg2 = segments[i + 1]
+                seg3 = segments[i + 2]
+                
+                # transfer → transfer 패턴에서 왕복 체크
+                if (seg1.get('type') == 'transfer' and 
+                    seg2.get('type') == 'transfer' and
+                    seg1.get('to_stop') == seg2.get('from_stop') and
+                    seg1.get('from_stop') == seg2.get('to_stop')):
+                    
+                    # A→B→A 왕복 발견!
+                    from_stop = seg1.get('from_stop', '')
+                    intermediate = seg1.get('to_stop', '')
+                    logger.info(f"왕복 환승 제거: {from_stop} → {intermediate} → {from_stop}")
+                    
+                    # 왕복 환승을 건너뛰고 다음 세그먼트로
+                    i += 2
+                    continue
+            
+            cleaned.append(segments[i])
+            i += 1
+        
+        return cleaned
     
     def _calculate_total_cost(self, segments):
         """세그먼트들의 총 비용 계산"""
